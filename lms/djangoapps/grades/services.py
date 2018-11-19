@@ -12,7 +12,11 @@ from track.event_transaction_utils import create_new_event_transaction_id, set_e
 from .config.waffle import waffle_flags, REJECTED_EXAM_OVERRIDES_GRADE
 from .constants import ScoreDatabaseTableEnum
 from .events import SUBSECTION_OVERRIDE_EVENT_TYPE
-from .models import PersistentSubsectionGrade, PersistentSubsectionGradeOverride, PersistentSubsectionGradeOverrideHistory
+from .models import (
+    PersistentSubsectionGrade,
+    PersistentSubsectionGradeOverride,
+    PersistentSubsectionGradeOverrideHistory
+)
 from .signals.signals import SUBSECTION_OVERRIDE_CHANGED
 
 
