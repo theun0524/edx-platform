@@ -642,10 +642,22 @@ class PersistentSubsectionGradeOverrideHistory(models.Model):
     """
     A django model tracking persistent grades override audit records.
     """
+    PROCTORING = 'PROCTOR'
+    GRADEBOOK = 'GRADEBK'
+    OVERRIDE_FEATURES = (
+        (PROCTORING, 'Proctoring')
+        (GRADEBOOK, 'Gradebook')
+    )
+
     class Meta(object):
         app_label = "grades"
 
     override = models.ForeignKey(PersistentSubsectionGradeOverride, related_name='override_history')
+    feature = models.CharField(
+        max_length=8,
+        choices=OVERRIDE_FEATURES,
+        default=PROCTORING
+    )
     user_id = models.IntegerField(blank=True)
-    comments = models.CharField(max_length=300)
+    comments = models.CharField(max_length=300, blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True, db_index=True)

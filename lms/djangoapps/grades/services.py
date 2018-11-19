@@ -12,7 +12,7 @@ from track.event_transaction_utils import create_new_event_transaction_id, set_e
 from .config.waffle import waffle_flags, REJECTED_EXAM_OVERRIDES_GRADE
 from .constants import ScoreDatabaseTableEnum
 from .events import SUBSECTION_OVERRIDE_EVENT_TYPE
-from .models import PersistentSubsectionGrade, PersistentSubsectionGradeOverride
+from .models import PersistentSubsectionGrade, PersistentSubsectionGradeOverride, PersistentSubsectionGradeOverrideHistory
 from .signals.signals import SUBSECTION_OVERRIDE_CHANGED
 
 
@@ -77,6 +77,8 @@ class GradesService(object):
             earned_all_override=earned_all,
             earned_graded_override=earned_graded
         )
+
+        _ = PersistentSubsectionGradeOverrideHistory.objects.create(override=override)
 
         # Cache a new event id and event type which the signal handler will use to emit a tracking log event.
         create_new_event_transaction_id()

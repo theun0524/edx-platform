@@ -24,7 +24,11 @@ from lms.djangoapps.grades.constants import ScoreDatabaseTableEnum
 from lms.djangoapps.grades.course_data import CourseData
 from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
 from lms.djangoapps.grades.events import SUBSECTION_GRADE_CALCULATED, subsection_grade_calculated
-from lms.djangoapps.grades.models import PersistentSubsectionGrade, PersistentSubsectionGradeOverride
+from lms.djangoapps.grades.models import (
+    PersistentSubsectionGrade,
+    PersistentSubsectionGradeOverride,
+    PersistentSubsectionGradeOverrideHistory
+)
 from lms.djangoapps.grades.subsection_grade import CreateSubsectionGrade
 from lms.djangoapps.grades.tasks import recalculate_subsection_grade_v3, are_grades_frozen
 from opaque_keys import InvalidKeyError
@@ -801,7 +805,7 @@ class GradebookBulkUpdateView(GradeViewMixin, PaginatedAPIView):
                     continue
 
             if subsection_grade_model:
-                self._create_override(subsection_grade_model, **user_data['grade'])
+                self._create_override(request.user, subsection_grade_model, **user_data['grade'])
                 result.append(GradebookUpdateResponseItem(
                     user_id=user.id,
                     usage_id=text_type(usage_key),
@@ -824,7 +828,7 @@ class GradebookBulkUpdateView(GradeViewMixin, PaginatedAPIView):
         subsection_grade = CreateSubsectionGrade(subsection, course_data.structure, {}, {})
         return subsection_grade.update_or_create_model(user, force_update_subsections=True)
 
-    def _create_override(self, subsection_grade_model, **override_data):
+    def _create_override(self, request_user, subsection_grade_model, **override_data):
         """
         Helper method to create a `PersistentSubsectionGradeOverride` object
         and send a `SUBSECTION_OVERRIDE_CHANGED` signal.
@@ -832,6 +836,12 @@ class GradebookBulkUpdateView(GradeViewMixin, PaginatedAPIView):
         override, _ = PersistentSubsectionGradeOverride.objects.update_or_create(
             grade=subsection_grade_model,
             defaults=self._clean_override_data(override_data),
+        )
+
+        _ = PersistentSubsectionGradeOverrideHistory.objects.create(
+            override=override
+            feature=PersistentSubsectionGradeOverrideHistory.GRADEBOOK,
+            user_id=request_user.id
         )
 
         set_event_transaction_type(SUBSECTION_GRADE_CALCULATED)
