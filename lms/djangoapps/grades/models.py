@@ -636,3 +636,16 @@ class PersistentSubsectionGradeOverride(models.Model):
 def prefetch(user, course_key):
     PersistentSubsectionGradeOverride.prefetch(user.id, course_key)
     VisibleBlocks.bulk_read(user.id, course_key)
+
+
+class PersistentSubsectionGradeOverrideHistory(models.Model):
+    """
+    A django model tracking persistent grades override audit records.
+    """
+    class Meta(object):
+        app_label = "grades"
+
+    override = models.ForeignKey(PersistentSubsectionGradeOverride, related_name='override_history')
+    user_id = models.IntegerField(blank=True)
+    comments = models.CharField(max_length=300)
+    created = models.DateTimeField(auto_now_add=True, db_index=True)
