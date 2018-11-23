@@ -145,8 +145,7 @@ def wrap_xblock(
     }
 
     if hasattr(frag, 'json_init_args') and frag.json_init_args is not None:
-        # Replace / with \/ so that "</script>" in the data won't break things.
-        template_context['js_init_parameters'] = json.dumps(frag.json_init_args).replace("/", r"\/")
+        template_context['js_init_parameters'] = frag.json_init_args
     else:
         template_context['js_init_parameters'] = ""
 
@@ -215,8 +214,7 @@ def wrap_xblock_aside(
     }
 
     if hasattr(frag, 'json_init_args') and frag.json_init_args is not None:
-        # Replace / with \/ so that "</script>" in the data won't break things.
-        template_context['js_init_parameters'] = json.dumps(frag.json_init_args).replace("/", r"\/")
+        template_context['js_init_parameters'] = frag.json_init_args
     else:
         template_context['js_init_parameters'] = ""
 
