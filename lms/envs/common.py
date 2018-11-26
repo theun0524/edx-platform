@@ -3488,6 +3488,9 @@ RETIREMENT_STATES = [
     'COMPLETE',
 ]
 
+############## Settings for Writable Gradebook  #########################
+WRITABLE_GRADEBOOK_URL = 'http://localhost:1991'
+
 ############### Settings for django-fernet-fields ##################
 FERNET_KEYS = [
     'DUMMY KEY CHANGE BEFORE GOING TO PRODUCTION',
