@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from course_modes.tests.factories import CourseModeFactory
+from course_modes.tests.factories import CourseMode
 from django.core.management import call_command
 from opaque_keys import InvalidKeyError
 from six import text_type
@@ -25,14 +25,9 @@ class ChangeEligibilityDeadlineTests(SharedModuleStoreTestCase):
         """ Initial set up for tests """
         super(ChangeEligibilityDeadlineTests, self).setUp()
         self.course = CourseFactory.create()
-        self.credit_mode = CourseModeFactory.create(
-            course_id=self.course.id,
-            mode_slug='credit',
-            mode_display_name='Credit',
-        )
 
         self.enrolled_user = UserFactory.create(username='amy', email='amy@pond.com', password='password')
-        CourseEnrollment.enroll(self.enrolled_user, self.course.id, mode='credit').save()
+        CourseEnrollment.enroll(self.enrolled_user, self.course.id, mode=CourseMode.CREDIT_MODE).save()
 
         credit_course = CreditCourse.objects.create(course_key=self.course.id)
         self.credit_eligibility = CreditEligibility.objects.create(
@@ -105,7 +100,7 @@ class ChangeEligibilityDeadlineTests(SharedModuleStoreTestCase):
                      *command_args.format(username=username, course=course_key, date='2030-12-30').split(' ')
                      )
 
-        credit_eligibility = CreditEligibility.objects.get(username=self.enrolled_user.username,
+        credit_eligibility = CreditEligibility.objects.get(username=username,
                                                            course__course_key=self.course.id)
         credit_deadline = credit_eligibility.deadline.date()
         expected_deadline = datetime.strptime('2030-12-30', '%Y-%m-%d').date()

@@ -3,7 +3,8 @@
 import logging
 from datetime import datetime, timedelta
 
-from django.core.management.base import BaseCommand, CommandError
+from course_modes.models import CourseMode
+from django.core.management.base import BaseCommand
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from student.models import CourseEnrollment, User
@@ -61,30 +62,30 @@ class Command(BaseCommand):
         course_id = options['course_key']
 
         try:
-            user_id = User.objects.get(username=username).pk
+            user = User.objects.get(username=username)
         except User.DoesNotExist:
             logger.exception('Invalid or non-existent username {}'.format(username))
             raise
 
         try:
             course_key = CourseKey.from_string(course_id)
-            CourseEnrollment.objects.get(user_id=user_id, course_id=course_key, mode='credit')
+            CourseEnrollment.objects.get(user=user, course_id=course_key, mode=CourseMode.CREDIT_MODE)
         except InvalidKeyError:
             logger.exception('Invalid or non-existent course id {}'.format(course_id))
             raise
         except CourseEnrollment.DoesNotExist:
-            logger.exception('No record found in database for {username} in course {course_id}'
+            logger.exception('No enrollment found in database for {username} in course {course_id}'
                              .format(username=username, course_id=course_id))
             raise
 
         try:
             expected_date = datetime.strptime(options['deadline'], '%Y-%m-%d')
-            current_date = datetime.now()
+            current_date = datetime.utcnow()
             if expected_date < current_date:
                 raise IncorrectDeadline('Incorrect Deadline')
         except (TypeError, KeyError, IncorrectDeadline):
             logger.warning('Invalid date or date not provided. Setting deadline to one month from now')
-            expected_date = datetime.now() + timedelta(days=DEFAULT_DAYS)
+            expected_date = datetime.utcnow() + timedelta(days=DEFAULT_DAYS)
 
         self.update_credit_eligibility_deadline(username, course_key, expected_date)
         logger.info("Successfully updated credit eligibility deadline for {}".format(username))
