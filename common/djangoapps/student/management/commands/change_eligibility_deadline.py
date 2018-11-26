@@ -25,10 +25,14 @@ class IncorrectDeadline(Exception):
 class Command(BaseCommand):
 
     help = """
-    
-    Changes the credit course eligibility deadline for a student 
-    in a particular course.
-    
+    Changes the credit course eligibility deadline for a student in a particular course.
+    It can be used to update the expired deadline to make student credit eligible.
+
+    Example:
+
+        Change credit eligibility deadline for user joe enrolled in credit course :
+
+            $ ... change_eligibility_deadline -u joe -d 2018-12-30 -c course-v1:org-course-run
     """
 
     def add_arguments(self, parser):
@@ -41,49 +45,56 @@ class Command(BaseCommand):
                             metavar='DEADLINE',
                             help='Desired eligibility deadline for credit course')
         parser.add_argument('-c', '--course',
-                            metavar='COURSE_ID',
-                            dest='course_id',
+                            metavar='COURSE_KEY',
+                            dest='course_key',
                             required=True,
-                            help='Course ID')
+                            help='Course Key')
 
     def handle(self, *args, **options):
+        """
+        Handler for the command
+
+        It performs checks for username, course and enrollment validity and
+        then calls update_deadline for the given arguments
+        """
         username = options['username']
-        course_id = options['course_id']
+        course_id = options['course_key']
 
         try:
-            user_id = int(User.objects.get(username=username).pk)
+            user_id = User.objects.get(username=username).pk
         except User.DoesNotExist:
-            raise CommandError('Invalid or non-existent username {}'.format(username))
+            logger.exception('Invalid or non-existent username {}'.format(username))
+            raise
 
         try:
             course_key = CourseKey.from_string(course_id)
-            CourseEnrollment.objects.filter(user_id=user_id, course_id=course_key, mode='credit')
+            CourseEnrollment.objects.get(user_id=user_id, course_id=course_key, mode='credit')
         except InvalidKeyError:
-            raise CommandError('Invalid or non-existent course id {}'.format(course_id))
+            logger.exception('Invalid or non-existent course id {}'.format(course_id))
+            raise
         except CourseEnrollment.DoesNotExist:
-            raise CommandError('No record found in database for {username} in course {course_id}'
-                               .format(username=username, course_id=course_id))
+            logger.exception('No record found in database for {username} in course {course_id}'
+                             .format(username=username, course_id=course_id))
+            raise
 
         try:
             expected_date = datetime.strptime(options['deadline'], '%Y-%m-%d')
             current_date = datetime.now()
             if expected_date < current_date:
                 raise IncorrectDeadline('Incorrect Deadline')
-
-        except (ValueError, InvalidKeyError):
-            CommandError('Invalid format or date not provided. Setting deadline to one month from now')
-            expected_date = datetime.now() + timedelta(days=DEFAULT_DAYS)
-        except IncorrectDeadline:
-            CommandError('Deadline cannot be prior to today. Setting deadline to one month from now')
+        except (TypeError, KeyError, IncorrectDeadline):
+            logger.warning('Invalid date or date not provided. Setting deadline to one month from now')
             expected_date = datetime.now() + timedelta(days=DEFAULT_DAYS)
 
-        self.update_deadline(user_id, course_key, expected_date)
+        self.update_credit_eligibility_deadline(username, course_key, expected_date)
         logger.info("Successfully updated credit eligibility deadline for {}".format(username))
 
-    def update_deadline(self, user_id, course_key, deadline):
+    def update_credit_eligibility_deadline(self, username, course_key, new_deadline):
+        """ Update Credit Eligibility new_deadline for a specific user """
         try:
-            eligibility_record = CreditEligibility.objects.get(user_id=user_id, course_id=course_key)
-            eligibility_record.deadline = deadline
+            eligibility_record = CreditEligibility.objects.get(username=username, course__course_key=course_key)
+            eligibility_record.deadline = new_deadline
             eligibility_record.save()
         except CreditEligibility.DoesNotExist:
-            raise CommandError('User is not credit eligible')
+            logger.exception('User is not credit eligible')
+            raise
