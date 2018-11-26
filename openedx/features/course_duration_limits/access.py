@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.utils.translation import ugettext as _
 
 from util.date_utils import DEFAULT_SHORT_DATE_FORMAT, strftime_localized
+from django_comment_client.utils import has_discussion_privileges
 from lms.djangoapps.courseware.access_response import AccessError
 from lms.djangoapps.courseware.access_utils import ACCESS_GRANTED
 from lms.djangoapps.courseware.date_summary import verified_upgrade_deadline_link
@@ -67,6 +68,10 @@ def get_user_course_expiration_date(user, course):
 
     # if the user is a beta tester their access should not expire
     if CourseBetaTesterRole(course.id).has_user(user):
+        return None
+
+    # If the user is a Discussion Admin, Moderator, or Community TA their access should not expire
+    if has_discussion_privileges(user=user, course_id=course.id):
         return None
 
     try:
