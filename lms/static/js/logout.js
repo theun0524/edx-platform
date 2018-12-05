@@ -13,11 +13,13 @@
             redirectUrl = $iframeContainer.data('redirect-url');
 
         if ($iframes.length === 0) {
+            window.localStorage.removeItem('session');
             window.location = redirectUrl;
         }
 
         $iframes.allLoaded(function() {
-            window.location = redirectUrl;
+          window.localStorage.removeItem('session');
+          window.location = redirectUrl;
         });
     });
 }(jQuery));
